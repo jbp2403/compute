@@ -2,6 +2,7 @@ import json
 import argparse
 import datetime
 import requests
+import sys
 from getpass import getpass
 
 def login_compute(base_url, access_key, secret_key):
@@ -21,7 +22,7 @@ def get_defender_data(base_url, token):
         response.raise_for_status()
     except requests.exceptions.RequestException as err:
         print(f"Error in request for Defenders: {err}")
-        return None
+        sys.exit(-1)
     
     return response.json()
 
