@@ -1,9 +1,9 @@
 #!/bin/sh
 
 VERBOSE=0
-FILE_NAME=""
 TOKEN=""
 ENDPOINT="images"
+FILE_NAME=$(date "+%Y%m%d")
 HEADERSTMPFILE="headers.tmp"
 
 #Check requirments
@@ -56,14 +56,16 @@ echo "Remaining arguments: $@"
 
 #Execute curl command and capture the content.
 LIMIT=50
-FIRSTPASS=1
 DELAY_SECONDS=1 # Delay between requests to respect the rate limit
 
-echo "Calling curl for $CONSOLEURI and Endpoint $ENDPOINT and will write to $FILE_NAME"
+#echo "Calling curl for $CONSOLEURI and Endpoint $ENDPOINT and will write to $FILE_NAME"
 
 #Make the initial API call and extract headers for response count
 curl -s -D $HEADERSTMPFILE -o "$FILE_NAME-offset-0.json" -L "$CONSOLEURI/api/v1/$ENDPOINT?limit=$LIMIT&offset=0" -H "Authorization: Bearer $TOKEN" -H "Accept: application/json"
-#HEADERS=$(cat "$HEADERSTMPFILE")
+if [[ $? > 0 ]]; then
+    echo "Initial curl command failed. Exiting..."
+    exit 1
+fi
 TOTALCOUNT=$(cat $HEADERSTMPFILE | grep 'Total-Count' |cut -d':' -f2 |xargs |tr -d '\r')
 
 # Check if we successfully got a number
@@ -96,3 +98,6 @@ if (( TOTALCOUNT > LIMIT )); then
 else
     echo "Total count is less than or equal to the limit. No additional requests needed."
 fi
+
+#Filter resulting files for any baseImage information
+jq '.[].baseImage | select(. != null)' "$FILE_NAME"-offset*.json
